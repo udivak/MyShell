@@ -178,7 +178,26 @@ void executeCommand(parseInfo* info) {
         fclose(destFile);
         return;
     }
+    
+    if (strcmp(info->tokens[0], "tree") == 0) {
+        // Build the arguments for execvp. 
+        // If the user has specified a directory, pass it; otherwise, pass the current directory.
+        char *args[3];
+        args[0] = "./tree";  // assuming tree executable is in the current directory
+        if (info->tokenCount > 1) {
+            args[1] = info->tokens[1];
+        } else {
+            args[1] = "."; // default to current directory
+        }
+        args[2] = NULL;
 
+        // Execute the tree command using execvp
+        if (execvp(args[0], args) == -1) {
+            perror("execvp");
+        }
+        exit(0);
+    }
+    
     else {
         printf("Command '%s' is not recognized in this simple shell version.\n", info->tokens[0]);
     }
