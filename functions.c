@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <dirent.h>
+
 
 parseInfo* parse(char* cmdLine) {
     parseInfo* info = malloc(sizeof(parseInfo));
@@ -27,6 +29,31 @@ parseInfo* parse(char* cmdLine) {
     
     return info;
 }
+
+
+void removeDirectoryRecursive(const char *path) {
+    DIR *dir = opendir(path);
+    if (!dir) return;
+
+    struct dirent *entry;
+    char filepath[1024];
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        snprintf(filepath, sizeof(filepath), "%s/%s", path, entry->d_name);
+        struct stat st;
+        stat(filepath, &st);
+        if (S_ISDIR(st.st_mode)) {
+            removeDirectoryRecursive(filepath);
+        } else {
+            remove(filepath);
+        }
+    }
+    closedir(dir);
+    rmdir(path);
+}
+
 
 void simulateEditor(char* filename) {
     FILE* fp = fopen(filename, "w");
@@ -257,6 +284,44 @@ void executeCommand(parseInfo* info) {
         }
         exit(0);
     }
+    if (strcmp(info->tokens[0], "rmdir") == 0) {
+        if (info->tokenCount < 2) {
+            printf("Usage: rmdir <directory>\n");
+        } else {
+            if (rmdir(info->tokens[1]) == 0) {
+                printf("Directory '%s' removed successfully.\n", info->tokens[1]);
+            } else {
+                perror("rmdir");
+            }
+        }
+        return;
+    }
+    if (strcmp(info->tokens[0], "rm") == 0) {
+        if (info->tokenCount < 2) {
+            printf("Usage: rm [-r] <file|directory>\n");
+        } else if (strcmp(info->tokens[1], "-r") == 0) {
+            if (info->tokenCount < 3) {
+                printf("Usage: rm -r <directory>\n");
+            } else {
+                removeDirectoryRecursive(info->tokens[2]);
+                printf("Directory '%s' removed recursively.\n", info->tokens[2]);
+            }
+        } else {
+            struct stat st;
+            stat(info->tokens[1], &st);
+            if (S_ISDIR(st.st_mode)) {
+                printf("rm: cannot remove '%s': Is a directory\n", info->tokens[1]);
+            } else {
+                if (remove(info->tokens[1]) == 0) {
+                    printf("File '%s' removed successfully.\n", info->tokens[1]);
+                } else {
+                    perror("rm");
+                }
+            }
+        }
+        return;
+    }
+
     
     else {
         printf("Command '%s' is not recognized in this simple shell version.\n", info->tokens[0]);
