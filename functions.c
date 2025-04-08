@@ -117,16 +117,29 @@ void executeCommand(parseInfo* info) {
 
     //LS
     if (strcmp(info -> tokens[0], "ls") == 0) {
-        pid_t pid = fork();
-        if (pid == 0) {
-            // Child process: Execute the `ls` command
-            execvp("ls", info->tokens);  // info->tokens should hold the arguments passed to `ls`
-            perror("execvp");  // If execvp fails, it will print this error
-            exit(1);
+        if (info->tokenCount == 1) {
+            pid_t pid = fork();
+            if (pid == 0) {
+                // Child process: Execute the `ls` command
+                execlp("ls", "ls", (char*)NULL);
+                perror("execlp");
+            } else {
+                wait(NULL);
+            }
+        } else if (info->tokenCount == 2 && strcmp(info->tokens[1], "-l") == 0) {
+            pid_t pid = fork();
+            if (pid == 0) {
+                // Child process: Execute the `ls -l` command
+                execlp("ls", "ls", "-l", (char*)NULL);
+                perror("execlp");
+            } else {
+                wait(NULL);
+            }
         } else {
-            // Parent process: Wait for the child to finish
-            wait(NULL);
+            fprintf(stderr, "ls: invalid option -- '%s'\n", info->tokens[1]);
+            return;
         }
+        return;
     }
     // CLEAR
     if (strcmp(info -> tokens[0], "clear") == 0) {
@@ -143,7 +156,7 @@ void executeCommand(parseInfo* info) {
         }
     }
     // GREP
-    if (strcmp(info -> tokens[0], "grep") == 0) {
+    if (strcmp(info -> tokens[0], "grep") == 0&& strcmp(info->tokens[1], "-c") != 0) {
         for (int i = 0; i < info->tokenCount; i++) {
             char* token = info->tokens[i];
             int len = strlen(token);

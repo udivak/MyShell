@@ -21,45 +21,54 @@ void parseCommand(char *cmdLine, char **tokens) {
     tokens[i] = NULL;
 }
 
-void executePipe(char *cmdLine) {
-    char *tokens[MAX_TOKENS];
-    parseCommand(cmdLine, tokens);
-
+void executePipe(parseInfo* info) {
     int pipefd[2];
     pid_t pid1, pid2;
 
-// create the pipe
-    if (pipe(pipefd) == -1) {
-        perror("pipe");
-        exit(1);
+    int pipeIndex = -1;
+    for (int i = 0; i < info->tokenCount; i++) {
+        if (strcmp(info->tokens[i], "|") == 0) {
+            pipeIndex = i;
+            break;
+        }
     }
 
+    if (pipeIndex == -1) {
+        fprintf(stderr, "Pipe symbol not found in tokens\n");
+        return;
+    }
+
+    info->tokens[pipeIndex] = NULL;
+
+    char** cmd1 = info->tokens;
+    char** cmd2 = &info->tokens[pipeIndex + 1];
+
+    pipe(pipefd);
+
     if ((pid1 = fork()) == 0) {
-        close(pipefd[0]);
         dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[0]);
         close(pipefd[1]);
-// run the first command
-        execvp(tokens[0], tokens);
-        perror("execvp");
+        execvp(cmd1[0], cmd1);
+        perror("execvp cmd1");
         exit(1);
     }
 
     if ((pid2 = fork()) == 0) {
-        close(pipefd[1]);
         dup2(pipefd[0], STDIN_FILENO);
+        close(pipefd[1]);
         close(pipefd[0]);
-// run the second command
-        execvp(tokens[2], &tokens[2]);
-        perror("execvp");
+        execvp(cmd2[0], cmd2);
+        perror("execvp cmd2");
         exit(1);
     }
 
     close(pipefd[0]);
     close(pipefd[1]);
-
     waitpid(pid1, NULL, 0);
     waitpid(pid2, NULL, 0);
 }
+
 
 
 int main(int argc, char **argv) {
@@ -83,6 +92,15 @@ int main(int argc, char **argv) {
 
         // Parse the input command into tokens.
         info = parse(cmdLine);
+        for (int i = 0; i < info->tokenCount; i++) {
+                    char* token = info->tokens[i];
+                    int len = strlen(token);
+                    if (token[0] == '"' && token[len - 1] == '"') {
+                        token[len - 1] = '\0';
+                        memmove(token, token + 1, len - 1);
+                    }
+                }
+
         
         //EXIT
         if (strcmp(info ->tokens[0], "exit") == 0) {
@@ -108,8 +126,18 @@ int main(int argc, char **argv) {
                 }
             }
         }
-        if (strchr(cmdLine, '|')) {
-                    executePipe(cmdLine);  // Parse and execute pipe command
+
+
+        int hasPipeToken = 0;
+        for (int i = 0; i < info->tokenCount; i++) {
+            if (strcmp(info->tokens[i], "|") == 0) {
+                hasPipeToken = 1;
+                break;
+            }
+        }
+
+        if (hasPipeToken) {
+            executePipe(info);  // Parse and execute pipe command
         }
         else {
             // Create a child process
