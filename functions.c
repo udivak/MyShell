@@ -24,6 +24,7 @@ parseInfo* parse(char* cmdLine) {
         info -> tokenCount++;
         token = strtok(NULL, " ");
     }
+    
     return info;
 }
 
