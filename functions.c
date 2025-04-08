@@ -26,6 +26,10 @@ parseInfo* parse(char* cmdLine) {
     return info;
 }
 
+void simulateEditor(char* filename) {
+    
+}
+
 void executeCommand(parseInfo* info) {
     if (info -> tokenCount == 0) 
         return;
