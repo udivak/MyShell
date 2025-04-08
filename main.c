@@ -101,6 +101,16 @@ int main(int argc, char **argv) {
                     }
                 }
 
+        
+        //EXIT
+        if (strcmp(info ->tokens[0], "exit") == 0) {
+            for (int i=0; i < info -> tokenCount; i++)
+                free(info -> tokens[i]);
+            free(info);
+            printf("%s", "Exiting shell...");
+            break;
+        }
+        
         // Parent Process functions
         // CD
         if (strcmp(info -> tokens[0], "cd") == 0) {
