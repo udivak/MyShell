@@ -94,6 +94,20 @@ void executeCommand(parseInfo* info) {
             wait(NULL);
         }
     }
+    // CLEAR
+    if (strcmp(info -> tokens[0], "clear") == 0) {
+        // Execute the `clear` command
+        pid_t pid = fork();
+        if (pid == 0) {
+            // Child process: Execute the `clear` command
+            execlp("clear", "clear", (char*)NULL);
+            perror("execlp");  // If execlp fails, it will print this error
+            exit(1);
+        } else {
+            // Parent process: Wait for the child to finish
+            wait(NULL);
+        }
+    }
 
     // CP (copy file)
     if (strcmp(info->tokens[0], "cp") == 0) {
