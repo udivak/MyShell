@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "functions.h"
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 
 parseInfo* parse(char* cmdLine) {
@@ -54,7 +55,70 @@ void executeCommand(parseInfo* info) {
     if (strcmp(info -> tokens[0], "nano") == 0) {
         
     }
-    
+    //CHMOD
+    if (strcmp(info->tokens[0], "chmod") == 0) {
+        if (info->tokenCount < 3) {
+            printf("Usage: chmod <mode> <file1> [file2] ...\n");
+            return;
+        }
+
+        char* endptr;
+        mode_t mode = (mode_t) strtol(info->tokens[1], &endptr, 8); //base 8
+
+        if ( *endptr != '\0') {
+            printf("Invalid mode: %s\n", info->tokens[1]);
+            return;
+        }
+
+        for (int i = 2; i < info->tokenCount; i++) {
+            const char* path = info->tokens[i];
+            if (chmod(path, mode) != 0) {
+                perror(path);
+            } else {
+                printf("Changed permissions of '%s'\n", path);
+            }
+        }
+        return;
+
+
+    }
+    //CP
+    if (strcmp(info->tokens[0], "cp") == 0) {
+        if (info->tokenCount < 3) {
+            printf("Usage: cp <source_file> <destination_file>\n");
+            return;
+        }
+
+        const char* src = info->tokens[1];
+        const char* dest = info->tokens[2];
+
+        FILE* srcFile = fopen(src, "rb");
+        if (!srcFile) {
+            perror("Source file open error");
+            return;
+        }
+
+        FILE* destFile = fopen(dest, "wb");
+        if (!destFile) {
+            perror("Destination file open error");
+            fclose(srcFile);
+            return;
+        }
+
+        char buffer[1024];
+        size_t bytesRead;
+
+        while ((bytesRead = fread(buffer, 1, sizeof(buffer), srcFile)) > 0) {
+            fwrite(buffer, 1, bytesRead, destFile);
+        }
+
+        printf("Copied '%s' to '%s'\n", src, dest);
+
+        fclose(srcFile);
+        fclose(destFile);
+        return;
+    }
+
     else {
         printf("Command '%s' is not recognized in this simple shell version.\n", info->tokens[0]);
     }
