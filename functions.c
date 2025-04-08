@@ -27,6 +27,31 @@ parseInfo* parse(char* cmdLine) {
     return info;
 }
 
+void simulateEditor(char* filename) {
+    FILE* fp = fopen(filename, "w");
+    if (!fp) {
+        printf("%s", "Error fopen");
+        exit(1);
+    }
+    printf("Simulated editor opened '%s'.\n", filename);
+    printf("Type your text below. Type 'EOF' on a new line to finish editing.\n");
+    char line[1024];
+    while (1) {
+        printf("> ");
+        if (fgets(line, sizeof(line), stdin) == NULL) {
+            break;  // In case of end-of-file.
+        }
+        // If the line equals "EOF" (with or without newline), finish editing.
+        if (strcmp(line, "EOF\n") == 0 || strcmp(line, "EOF") == 0) {
+            break;
+        }
+        fputs(line, fp);
+    }
+    
+    fclose(fp);
+    printf("Finished editing '%s'.\n", filename);
+}
+
 void executeCommand(parseInfo* info) {
     if (info -> tokenCount == 0) 
         return;
@@ -52,8 +77,16 @@ void executeCommand(parseInfo* info) {
     }
     
     //NANO
-    if (strcmp(info -> tokens[0], "nano") == 0) {
-        
+    else if (strcmp(info -> tokens[0], "nano") == 0) {
+        if (info->tokenCount < 2) {
+            fprintf(stderr, "nano: missing filename\n");
+        } else {
+            simulateEditor(info->tokens[1]);
+        }
+    }
+    
+    else if (strcmp(info->tokens[0], "cat") == 0 && info->tokenCount >= 3 && strcmp(info->tokens[1], ">") == 0) {
+        simulateEditor(info->tokens[2]);
     }
     //CHMOD
     if (strcmp(info->tokens[0], "chmod") == 0) {

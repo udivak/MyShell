@@ -11,3 +11,4 @@ typedef struct {
 
 parseInfo* parse(char* cmdLine);
 void executeCommand(parseInfo* command);
+void simulateEditor(char* filename);
