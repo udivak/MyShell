@@ -9,6 +9,59 @@
 
 #define CMD_BUF_SIZE 1024
 
+
+
+void parseCommand(char *cmdLine, char **tokens) {
+    char *token = strtok(cmdLine, " \t\n");
+    int i = 0;
+    while (token != NULL) {
+        tokens[i++] = token;
+        token = strtok(NULL, " \t\n");
+    }
+    tokens[i] = NULL;
+}
+
+void executePipe(char *cmdLine) {
+    char *tokens[MAX_TOKENS];
+    parseCommand(cmdLine, tokens);
+
+    int pipefd[2];
+    pid_t pid1, pid2;
+
+// create the pipe
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        exit(1);
+    }
+
+    if ((pid1 = fork()) == 0) {
+        close(pipefd[0]);
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[1]);
+// run the first command
+        execvp(tokens[0], tokens);
+        perror("execvp");
+        exit(1);
+    }
+
+    if ((pid2 = fork()) == 0) {
+        close(pipefd[1]);
+        dup2(pipefd[0], STDIN_FILENO);
+        close(pipefd[0]);
+// run the second command
+        execvp(tokens[2], &tokens[2]);
+        perror("execvp");
+        exit(1);
+    }
+
+    close(pipefd[0]);
+    close(pipefd[1]);
+
+    waitpid(pid1, NULL, 0);
+    waitpid(pid2, NULL, 0);
+}
+
+
 int main(int argc, char **argv) {
     char cmdLine[CMD_BUF_SIZE];
     pid_t childPid;
@@ -27,10 +80,10 @@ int main(int argc, char **argv) {
         if(strlen(cmdLine) <= 1) {
             continue;
         }
-        
+
         // Parse the input command into tokens.
         info = parse(cmdLine);
-        
+
         // Parent Process functions
         // CD
         if (strcmp(info -> tokens[0], "cd") == 0) {
@@ -45,6 +98,9 @@ int main(int argc, char **argv) {
                     printf("%s", info->tokens[1]);
                 }
             }
+        }
+        if (strchr(cmdLine, '|')) {
+                    executePipe(cmdLine);  // Parse and execute pipe command
         }
         else {
             // Create a child process
@@ -66,3 +122,5 @@ int main(int argc, char **argv) {
     }
     return 0;
 }
+
+
