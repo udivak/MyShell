@@ -141,6 +141,52 @@ void executeCommand(parseInfo* info) {
             wait(NULL);
         }
     }
+    // GREP
+    if (strcmp(info -> tokens[0], "grep") == 0) {
+        for (int i = 0; i < info->tokenCount; i++) {
+            char* token = info->tokens[i];
+            int len = strlen(token);
+            if (token[0] == '"' && token[len - 1] == '"') {
+                token[len - 1] = '\0';
+                memmove(token, token + 1, len - 1);
+            }
+        }
+        pid_t pid = fork();
+        if (pid == 0) {
+            // Child process: Execute the `grep` command
+            execvp("grep", info->tokens);  // info->tokens should hold the arguments passed to `grep`
+            perror("execvp");
+            exit(1);
+        } else {
+            // Parent process: Wait for the child to finish
+            wait(NULL);
+        }
+        return;
+    }
+
+
+    // GREP -C
+    if (strcmp(info -> tokens[0], "grep") == 0 && strcmp(info->tokens[1], "-c") == 0) {
+        for (int i = 0; i < info->tokenCount; i++) {
+            char* token = info->tokens[i];
+            int len = strlen(token);
+            if (token[0] == '"' && token[len - 1] == '"') {
+                token[len - 1] = '\0';
+                memmove(token, token + 1, len - 1);
+            }
+        }
+        pid_t pid = fork();
+        if (pid == 0) {
+            // Child process: Execute the `grep -c` command
+            execvp("grep", info->tokens);  // info->tokens should hold the arguments passed to `grep -c`
+            perror("execvp");
+            exit(1);
+        } else {
+            // Parent process: Wait for the child to finish
+            wait(NULL);
+        }
+        return;
+    }
 
     // CP (copy file)
     if (strcmp(info->tokens[0], "cp") == 0) {
