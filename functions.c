@@ -81,6 +81,20 @@ void executeCommand(parseInfo* info) {
         return;
     }
 
+    //LS
+    if (strcmp(info -> tokens[0], "ls") == 0) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            // Child process: Execute the `ls` command
+            execvp("ls", info->tokens);  // info->tokens should hold the arguments passed to `ls`
+            perror("execvp");  // If execvp fails, it will print this error
+            exit(1);
+        } else {
+            // Parent process: Wait for the child to finish
+            wait(NULL);
+        }
+    }
+
     // CP (copy file)
     if (strcmp(info->tokens[0], "cp") == 0) {
         if (info->tokenCount < 3) {
