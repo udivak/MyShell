@@ -78,9 +78,46 @@ void executeCommand(parseInfo* info) {
                 printf("Changed permissions of '%s'\n", path);
             }
         }
-
-
+        return;
     }
+
+    // CP (copy file)
+    if (strcmp(info->tokens[0], "cp") == 0) {
+        if (info->tokenCount < 3) {
+            printf("Usage: cp <source_file> <destination_file>\n");
+            return;
+        }
+
+        const char* src = info->tokens[1];
+        const char* dest = info->tokens[2];
+
+        FILE* srcFile = fopen(src, "rb");
+        if (!srcFile) {
+            perror("Source file open error");
+            return;
+        }
+
+        FILE* destFile = fopen(dest, "wb");
+        if (!destFile) {
+            perror("Destination file open error");
+            fclose(srcFile);
+            return;
+        }
+
+        char buffer[1024];
+        size_t bytesRead;
+
+        while ((bytesRead = fread(buffer, 1, sizeof(buffer), srcFile)) > 0) {
+            fwrite(buffer, 1, bytesRead, destFile);
+        }
+
+        printf("Copied '%s' to '%s'\n", src, dest);
+
+        fclose(srcFile);
+        fclose(destFile);
+        return;
+    }
+
     else {
         printf("Command '%s' is not recognized in this simple shell version.\n", info->tokens[0]);
     }
@@ -89,4 +126,3 @@ void executeCommand(parseInfo* info) {
         free(info -> tokens[i]);
     free(info);
 }
-
