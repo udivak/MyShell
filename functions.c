@@ -79,10 +79,9 @@ void executeCommand(parseInfo* info) {
             }
         }
         return;
-
-
     }
-    //CP
+
+    // CP (copy file)
     if (strcmp(info->tokens[0], "cp") == 0) {
         if (info->tokenCount < 3) {
             printf("Usage: cp <source_file> <destination_file>\n");
@@ -127,4 +126,3 @@ void executeCommand(parseInfo* info) {
         free(info -> tokens[i]);
     free(info);
 }
-
