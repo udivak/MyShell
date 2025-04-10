@@ -10,7 +10,6 @@
 #define CMD_BUF_SIZE 1024
 
 
-
 void parseCommand(char *cmdLine, char **tokens) {
     char *token = strtok(cmdLine, " \t\n");
     int i = 0;
@@ -90,67 +89,66 @@ int main(int argc, char **argv) {
 
         info = parse(cmdLine);
         for (int i = 0; i < info->tokenCount; i++) {
-                    char* token = info->tokens[i];
-                    int len = strlen(token);
-                    if (token[0] == '"' && token[len - 1] == '"') {
-                        token[len - 1] = '\0';
-                        memmove(token, token + 1, len - 1);
+            char* token = info->tokens[i];
+            int len = strlen(token);
+            if (token[0] == '"' && token[len - 1] == '"') {
+                token[len - 1] = '\0';
+                memmove(token, token + 1, len - 1);
+            }
+        }
+
+        
+        switch (info->tokens[0][0]) {
+            case 'e':  // EXIT
+                if (strcmp(info->tokens[0], "exit") == 0) {
+                    for (int i = 0; i < info->tokenCount; i++)
+                        free(info->tokens[i]);
+                    free(info);
+                    printf("%s", "Exiting shell...\n");
+                    return 0;
+                }
+                break;
+
+            case 'c':  // CD
+                if (strcmp(info->tokens[0], "cd") == 0) {
+                    if (info->tokenCount == 1) {
+                        printf("%s", "cd with no path requested\n");
+                        chdir("/Users/");  // base dir
+                    } else {
+                        char* new_cd = info->tokens[1];
+                        if (chdir(info->tokens[1]) != 0) {
+                            printf("%s", "chdir error\n");
+                            printf("%s", info->tokens[1]);
+                        }
+                    }
+                }
+                break;
+
+            default: {
+                int hasPipeToken = 0;
+                for (int i = 0; i < info->tokenCount; i++) {
+                    if (strcmp(info->tokens[i], "|") == 0) {
+                        hasPipeToken = 1;
+                        break;
                     }
                 }
 
-        
-        //EXIT
-        if (strcmp(info ->tokens[0], "exit") == 0) {
-            for (int i=0; i < info -> tokenCount; i++)
-                free(info -> tokens[i]);
-            free(info);
-            printf("%s", "Exiting shell...");
-            break;
-        }
-        
-        // Parent Process functions
-        // CD
-        if (strcmp(info -> tokens[0], "cd") == 0) {
-            if (info -> tokenCount == 1) {
-                printf("%s", "cd with no path requested\n");
-                chdir("/Users/");      //base dir
-            }
-            else {
-                char* new_cd = info -> tokens[1];
-                if (chdir(info->tokens[1]) != 0) {
-                    printf("%s", "chdir error\n");
-                    printf("%s", info->tokens[1]);
+                if (hasPipeToken) {
+                    executePipe(info);  // Parse and execute pipe command
+                } else {
+                    childPid = fork();
+                    if (childPid < 0) {
+                        printf("fork error");
+                        exit(1);
+                    }
+                    if (childPid == 0) {
+                        executeCommand(info);
+                        exit(0);
+                    } else {
+                        waitpid(childPid, NULL, 0);
+                    }
                 }
-            }
-        }
-
-
-        int hasPipeToken = 0;
-        for (int i = 0; i < info->tokenCount; i++) {
-            if (strcmp(info->tokens[i], "|") == 0) {
-                hasPipeToken = 1;
                 break;
-            }
-        }
-
-        if (hasPipeToken) {
-            executePipe(info);  // Parse and execute pipe command
-        }
-        else {
-            // Create a child process
-            childPid = fork();
-            if (childPid < 0) {
-                printf("fork error");
-                exit(1);
-            }
-            if (childPid == 0) {
-                // Child process: execute command.
-                executeCommand(info);
-                // Exit after command execution.
-                exit(0);
-            } else {
-                // Parent process: wait for the child to finish.
-                waitpid(childPid, NULL, 0);
             }
         }
     }
