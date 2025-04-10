@@ -77,10 +77,8 @@ int main(int argc, char **argv) {
     parseInfo* info;
 
     while (1) {
-        // Display prompt and get user input.
         printf("> ");
         if (fgets(cmdLine, sizeof(cmdLine), stdin) == NULL) {
-            // Handle end-of-file (Ctrl+D)
             printf("\n");
             break;
         }
@@ -90,7 +88,6 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        // Parse the input command into tokens.
         info = parse(cmdLine);
         for (int i = 0; i < info->tokenCount; i++) {
                     char* token = info->tokens[i];
